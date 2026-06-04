@@ -58,6 +58,10 @@ wss.on("connection", (ws, req) => {
   });
 });
 
+function sendTo(ws, data) {
+  if (ws.readyState === 1) ws.send(JSON.stringify(data));
+}
+
 function broadcast(data) {
   const m = JSON.stringify(data);
   clients.forEach(ws => { if (ws.readyState === 1) ws.send(m); });
@@ -77,24 +81,11 @@ async function generateReply(comment) {
 
 function connectTikTok(username, ws) {
   const cleanUsername = username.replace(/^@+/, '');
-
   if (activeConnections.has(cleanUsername)) {
     try { activeConnections.get(cleanUsername).disconnect(); } catch(e) {}
-    activeConnections.delete(cleanUsername);
   }
 
-  let tiktok;
-  try {
-    tiktok = new WebcastPushConnection(cleanUsername, {
-      processInitialData: false,
-      enableExtendedGiftInfo: false,
-      requestPollingIntervalMs: 2000,
-    });
-  } catch(e) {
-    broadcast({ type: "error", text: "Erro ao criar conexao: " + e.message });
-    return;
-  }
-
+  const tiktok = new WebcastPushConnection(cleanUsername, { processInitialData: false });
   activeConnections.set(cleanUsername, tiktok);
 
   tiktok.connect()
@@ -104,15 +95,16 @@ function connectTikTok(username, ws) {
     })
     .catch(err => {
       console.error(`[TikTok] Erro @${cleanUsername}:`, err.message);
-      broadcast({ type: "error", text: "Erro ao conectar: " + err.message });
+      broadcast({ type: "error", text: "Live de @" + cleanUsername + " nao encontrada. Verifique se esta ao vivo." });
     });
-
   tiktok.on("chat", async data => {
     const user = data.uniqueId || "usuario";
     const text = data.comment || "";
     if (!text || isIrrelevant(text)) return;
+
     const id = Date.now();
     broadcast({ type: "comment", user, text, id });
+
     try {
       const reply = await generateReply(text);
       broadcast({ type: "reply", user, text, reply, id });
@@ -122,7 +114,7 @@ function connectTikTok(username, ws) {
   });
 
   tiktok.on("disconnected", () => {
-    console.log(`[TikTok] @${cleanUsername} desconectado`);
+    console.log(`[TikTok] @${username} desconectado`);
     broadcast({ type: "status", text: "Live encerrada ou desconectada." });
   });
 }
