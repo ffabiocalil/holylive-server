@@ -1,0 +1,17 @@
+{
+  "name": "holylive-server",
+  "version": "1.0.0",
+  "description": "Holy Foods Live — Servidor WebSocket para teleprompter IA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "1.1.9",
+    "ws": "^8.16.0",
+    "@anthropic-ai/sdk": "^0.20.0"
+  }
+}
