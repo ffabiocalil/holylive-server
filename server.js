@@ -80,23 +80,23 @@ async function generateReply(comment) {
 }
 
 function connectTikTok(username, ws) {
-  if (activeConnections.has(username)) {
-    try { activeConnections.get(username).disconnect(); } catch(e) {}
+  const cleanUsername = username.replace(/^@+/, '');
+  if (activeConnections.has(cleanUsername)) {
+    try { activeConnections.get(cleanUsername).disconnect(); } catch(e) {}
   }
 
-  const tiktok = new WebcastPushConnection(username, { processInitialData: false });
-  activeConnections.set(username, tiktok);
+  const tiktok = new WebcastPushConnection(cleanUsername, { processInitialData: false });
+  activeConnections.set(cleanUsername, tiktok);
 
   tiktok.connect()
     .then(() => {
-      console.log(`[TikTok] Conectado @${username}`);
-      broadcast({ type: "status", text: "Conectado a live de @" + username });
+      console.log(`[TikTok] Conectado @${cleanUsername}`);
+      broadcast({ type: "status", text: "Conectado a live de @" + cleanUsername });
     })
     .catch(err => {
-      console.error(`[TikTok] Erro @${username}:`, err.message);
-      broadcast({ type: "error", text: "Live de @" + username + " nao encontrada. Verifique se esta ao vivo." });
+      console.error(`[TikTok] Erro @${cleanUsername}:`, err.message);
+      broadcast({ type: "error", text: "Live de @" + cleanUsername + " nao encontrada. Verifique se esta ao vivo." });
     });
-
   tiktok.on("chat", async data => {
     const user = data.uniqueId || "usuario";
     const text = data.comment || "";
